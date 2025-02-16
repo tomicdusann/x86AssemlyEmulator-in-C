@@ -5,14 +5,18 @@
 #include <stdlib.h>
 
 #define MEM_SIZE 256
+#define STACK_SIZE 50
+#define STACK_START (MEM_SIZE - 1)      // stack starts from the last address(index) in RAM, 
+                                        // on x86 platform stack starts on higher addresses & as you add elemente on it, it grows "down" to lower addresses
 
 typedef struct {
     int AX, BX, CX, DX; // CPU registers
     int IP;             // instruction pointer ~ program counter (PC)
     int FLAGS;          // Flags can be 0 or 1
+    int ESP;            // ESP register also refered as "Stack pointer"
 } CPU;
 
-CPU cpu = {0, 0, 0, 0, 0, 0};
+CPU cpu = {0, 0, 0, 0, 0, 0, STACK_START};
 char RAM[MEM_SIZE][20]; // Random access mem. for instructions and data store/load
 
 void execute_instruction(char* instr, char* op1, char* op2)
@@ -151,6 +155,58 @@ void execute_instruction(char* instr, char* op1, char* op2)
         if (strcmp(op1, "CX") == 0 && cpu.CX != 0) 
             cpu.AX /= cpu.CX;
     }
+    else if (strcmp(instr, "PUSH") == 0)
+    {
+        if (cpu.ESP < STACK_SIZE - 1)
+        {
+            printf("Stack overflow!\n");
+            return;
+        }
+
+        cpu.ESP--;      //Stack grows (addresses are getting lower
+
+        if (strcmp(op1, "AX") == 0)
+            sprintf(RAM[cpu.ESP], "%d", cpu.AX);
+        else if (strcmp(op1, "BX") == 0)
+            sprintf(RAM[cpu.ESP], "%d", cpu.BX);
+        else if (strcmp(op1, "CX") == 0)
+            sprintf(RAM[cpu.ESP], "%d", cpu.CX);
+        else if (strcmp(op1, "DX") == 0)
+            sprintf(RAM[cpu.ESP], "%d", cpu.DX);
+        else
+        {
+            printf("Invalid register for PUSH\n");
+        }
+    }
+    else if (strcmp(instr, "POP") == 0)
+    {
+        if (cpu.ESP >= STACK_START)
+        {
+            printf("Stack underflow!\n");
+            return;
+        }
+
+        int value = atoi(RAM[cpu.ESP]);
+        cpu.ESP++;
+
+        if (strcmp(op1, "AX") == 0)
+            cpu.AX = value;
+        if (strcmp(op1, "BX") == 0)
+            cpu.BX = value;
+        if (strcmp(op1, "CX") == 0)
+            cpu.CX = value;
+        if (strcmp(op1, "DX") == 0)
+            cpu.DX = value;
+        else
+        {
+            print("Invalid register for POP\n");
+        }
+    }
+    else if (strcmp(instr, "HLT") == 0)
+    {
+        //exit(0);
+        return;
+    }
 }
 
 void run_program() {
@@ -171,7 +227,7 @@ int main()
     cpu.IP = 0;  
 
     //Loading program in RAM
-    strcpy(RAM[0],  "MOV AX,    5");   
+    strcpy(RAM[0],  "MOV AX,    5");
     strcpy(RAM[1],  "MOV BX,    5");
     strcpy(RAM[2],  "ADD AX,    BX");
     strcpy(RAM[3],  "MOV [10],  AX");    // STORE data from cpu mem(reg) to RAM
@@ -181,7 +237,11 @@ int main()
     strcpy(RAM[7],  "JZ         9");
     strcpy(RAM[8],  "HLT");
     strcpy(RAM[9],  "MOV AX,    100");
-    strcpy(RAM[10], "HLT");
+    strcpy(RAM[10], "MOV BX,    31");
+    strcpy(RAM[11], "PUSH BX");
+    strcpy(RAM[12], "MOV BX,    32");
+    strcpy(RAM[13], "POP CX");
+    strcpy(RAM[14], "HLT");
 
     run_program(); // emulation start
 
