@@ -4,8 +4,10 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define MEM_SIZE 256
-#define STACK_SIZE 50
+#define MEM_ROWS 100
+#define MEM_ROW_LEN 20
+#define STACK_SIZE 20
+#define MEM_SIZE (MEM_ROWS * MEM_ROW_LEN)
 #define STACK_START (MEM_SIZE - 1)      // stack starts from the last address(index) in RAM, 
                                         // on x86 platform stack starts on higher addresses & as you add elemente on it, it grows "down" to lower addresses
 
@@ -17,7 +19,7 @@ typedef struct {
 } CPU;
 
 CPU cpu = {0, 0, 0, 0, 0, 0, STACK_START};
-char RAM[MEM_SIZE][20]; // Random access mem. for instructions and data store/load
+char RAM[MEM_ROWS][MEM_ROW_LEN]; // Random access mem. for instructions and data store/load
 
 void execute_instruction(char* instr, char* op1, char* op2)
 {
@@ -199,7 +201,7 @@ void execute_instruction(char* instr, char* op1, char* op2)
             cpu.DX = value;
         else
         {
-            print("Invalid register for POP\n");
+            printf("Invalid register for POP\n");
         }
     }
     else if (strcmp(instr, "HLT") == 0)
@@ -211,7 +213,7 @@ void execute_instruction(char* instr, char* op1, char* op2)
 
 void run_program() {
     while (cpu.IP < MEM_SIZE) {
-        char instruction_symbol[10], operand1[10], operand2[10];
+        char instruction_symbol[10], operand1[10] = "", operand2[10] = "";
         int num_read = sscanf(RAM[cpu.IP], "%s %s %s", instruction_symbol, operand1, operand2); // number of elements which match format spec "%s %s %s"
 
         if (num_read >= 1)
@@ -224,22 +226,37 @@ void run_program() {
 
 int main()
 {
-    cpu.IP = 0;  
+    cpu.IP = 0; 
+
+    for (int i = 0; i < MEM_ROWS; i++) {
+        for (int j = 0; j < MEM_ROW_LEN; j++) {
+            RAM[i][j] = '0'; 
+        }
+    }
+
+    // Ispis RAM-a
+    for (int i = 0; i < MEM_ROWS; i++) {
+        printf("RAM[%d]: ", i);
+        for (int j = 0; j < MEM_ROW_LEN; j++) {
+            printf("%c ", RAM[i][j]); 
+        }
+        printf("\n");
+    }
 
     //Loading program in RAM
-    strcpy(RAM[0],  "MOV AX,    5");
-    strcpy(RAM[1],  "MOV BX,    5");
-    strcpy(RAM[2],  "ADD AX,    BX");
-    strcpy(RAM[3],  "MOV [10],  AX");    // STORE data from cpu mem(reg) to RAM
-    strcpy(RAM[4],  "MOV AX,    0");
-    strcpy(RAM[5],  "MOV AX,    [10]");
-    strcpy(RAM[6],  "CMP AX,    BX");
-    strcpy(RAM[7],  "JZ         9");
+    strcpy(RAM[0],  "MOV AX, 5");
+    strcpy(RAM[1],  "MOV BX, 5");
+    strcpy(RAM[2],  "ADD AX, BX");
+    strcpy(RAM[3],  "MOV [10], AX");    // STORE data from cpu mem(reg) to RAM
+    strcpy(RAM[4],  "MOV AX, 0");
+    strcpy(RAM[5],  "MOV AX, [10]");
+    strcpy(RAM[6],  "CMP AX, BX");
+    strcpy(RAM[7],  "JZ 9");
     strcpy(RAM[8],  "HLT");
-    strcpy(RAM[9],  "MOV AX,    100");
-    strcpy(RAM[10], "MOV BX,    31");
+    strcpy(RAM[9],  "MOV AX, 100");
+    strcpy(RAM[10], "MOV BX, 31");
     strcpy(RAM[11], "PUSH BX");
-    strcpy(RAM[12], "MOV BX,    32");
+    strcpy(RAM[12], "MOV BX, 32");
     strcpy(RAM[13], "POP CX");
     strcpy(RAM[14], "HLT");
 
